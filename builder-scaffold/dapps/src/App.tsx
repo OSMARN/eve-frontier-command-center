@@ -23,8 +23,12 @@ function App() {
         border: '1px solid var(--border-color)',
         borderRadius: '4px',
       }}>
-        <h1 className="eve-title" style={{ margin: 0, fontSize: '1.5rem' }}>
-          <span className="eve-title-accent">🚀 FRONTIER</span> COMMAND CENTER
+        <h1 className="eve-title" style={{ 
+          margin: 0, 
+          fontSize: '2rem',
+          letterSpacing: '1px'
+        }}>
+          <span style={{ color: '#FF4700' }}>FRONTIER</span> COMMAND CENTER
         </h1>
         
         <WalletButton
@@ -41,9 +45,46 @@ function App() {
 
       {wallet.isConnected ? (
         <div className="eve-card">
-          <h2 className="eve-title" style={{ margin: '0 0 1rem 0', fontSize: '1.2rem' }}>
-            📊 CLAN DASHBOARD
-          </h2>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.75rem', 
+            marginBottom: '1rem',
+            height: '2rem'  // Фиксированная высота для выравнивания
+          }}>
+            <svg 
+              width="24" 
+              height="24" 
+              viewBox="0 0 30 30" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ display: 'block' }}
+            >
+              <rect x="0.5" y="0.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+              <rect x="1" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+              <rect x="8.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+              <rect x="0.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+              <rect x="9" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+              <rect x="9" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+              <rect x="1" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+              <rect x="8.5" y="24.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+              <rect x="16.5" y="8.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+              <rect x="17" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+              <rect x="17" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+              <rect x="16.5" y="24.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+              <rect x="24.5" y="0.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+              <rect x="24.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+              <rect x="25" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+              <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+            </svg>
+            <h2 className="eve-title" style={{ 
+              margin: 0, 
+              fontSize: '1.3rem',
+              lineHeight: '1' 
+            }}>
+              CLAN DASHBOARD
+            </h2>
+          </div>
           <p style={{ color: 'var(--text-secondary)' }}>
             Wallet connected. Loading data...
           </p>
@@ -56,6 +97,38 @@ function App() {
           minHeight: '300px',
         }}>
           <div className="eve-card" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              marginBottom: '1rem',
+              height: '2rem'
+            }}>
+              <svg 
+                width="32" 
+                height="32" 
+                viewBox="0 0 30 30" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ display: 'block' }}
+              >
+                <rect x="0.5" y="0.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                <rect x="1" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                <rect x="8.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                <rect x="0.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                <rect x="9" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                <rect x="9" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                <rect x="1" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                <rect x="8.5" y="24.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                <rect x="16.5" y="8.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                <rect x="17" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                <rect x="17" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                <rect x="16.5" y="24.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                <rect x="24.5" y="0.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                <rect x="24.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                <rect x="25" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+              </svg>
+            </div>
             <h2 className="eve-title" style={{ marginBottom: '1rem' }}>
               Welcome Commander
             </h2>
