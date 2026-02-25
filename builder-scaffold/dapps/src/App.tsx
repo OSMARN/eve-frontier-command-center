@@ -13,7 +13,6 @@ import { EveConfirmation } from './components/ui/EveConfirmation';
 import { Marketplace } from './components/marketplace/Marketplace';
 import './styles/eve-theme.css';
 
-// Мемоизированные компоненты для оптимизации
 const MemoizedAssemblyList = React.memo(AssemblyList);
 const MemoizedEventLog = React.memo(EventLog);
 const MemoizedMarketplace = React.memo(Marketplace);
@@ -56,7 +55,6 @@ function App() {
     setShowMarketplace(prev => !prev);
   }, []);
 
-  // Мемоизированные значения для статистики
   const memoizedStats = useMemo(() => stats, [stats]);
 
   return (
@@ -70,7 +68,6 @@ function App() {
       boxSizing: 'border-box',
       overflow: 'hidden'
     }}>
-      {/* EVE-style notifications */}
       {notifications.map(notification => (
         <EveNotification
           key={notification.id}
@@ -79,7 +76,6 @@ function App() {
         />
       ))}
 
-      {/* EVE-style confirmation */}
       {confirmation && (
         <EveConfirmation
           key={confirmation.id}
@@ -92,7 +88,6 @@ function App() {
         />
       )}
 
-      {/* Header - фиксированная высота */}
       <header style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -156,7 +151,6 @@ function App() {
         </div>
       </header>
 
-      {/* Main content - занимает всё оставшееся место */}
       <div style={{
         flex: 1,
         minHeight: 0,
@@ -183,7 +177,6 @@ function App() {
                 gap: '20px',
                 minHeight: 0
               }}>
-                {/* Top row - 60% высоты */}
                 <div style={{
                   flex: 3,
                   display: 'grid',
@@ -269,7 +262,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* Bottom row - 40% высоты */}
                 <div style={{
                   flex: 2,
                   minHeight: 0
@@ -360,7 +352,6 @@ function App() {
   );
 }
 
-// Мемоизированный компонент для строк статистики
 const StatRow = React.memo(({ label, value, color }: { label: string; value: string | number; color?: string }) => {
   return (
     <div style={{ 

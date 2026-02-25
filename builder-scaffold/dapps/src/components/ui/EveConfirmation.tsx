@@ -21,7 +21,6 @@ export function EveConfirmation({ message, onConfirm, onCancel }: EveConfirmatio
       <div style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border-color)',
-        borderRadius: '4px',
         padding: '2rem',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
         position: 'relative',
@@ -65,7 +64,6 @@ export function EveConfirmation({ message, onConfirm, onCancel }: EveConfirmatio
           borderRight: '2px solid #FF4700'
         }} />
 
-        {/* Message with line breaks */}
         <div style={{
           margin: '1rem 0 2rem 0',
           color: 'var(--text-primary)',
@@ -76,13 +74,11 @@ export function EveConfirmation({ message, onConfirm, onCancel }: EveConfirmatio
           textAlign: 'left',
           backgroundColor: 'var(--bg-secondary)',
           padding: '1rem',
-          borderRadius: '4px',
           border: '1px solid var(--border-color)'
         }}>
           {message}
         </div>
 
-        {/* Buttons */}
         <div style={{
           display: 'flex',
           gap: '1rem',

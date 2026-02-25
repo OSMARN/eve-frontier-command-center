@@ -1,10 +1,6 @@
-/* EVE Frontier Theme - Exact copy from evefrontier.com */
-
-/* Fonts must be at the very top */
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  /* Color palette from evefrontier.com */
   --bg-primary: #0a0c0f;
   --bg-secondary: #1a1e24;
   --bg-card: #1e232b;
@@ -20,7 +16,7 @@
 }
 
 * {
-  border-radius: 0 !important;  /* Убираем все скругления */
+  border-radius: 0 !important;
 }
 
 body {
@@ -32,7 +28,6 @@ body {
   min-height: 100vh;
 }
 
-/* Game-style scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -44,14 +39,13 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--accent-primary);
-  border-radius: 0;  /* Прямоугольный скроллбар */
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #ff8c3a;
 }
 
-/* EVE style card component */
 .eve-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -64,7 +58,6 @@ body {
   box-shadow: 0 4px 12px rgba(255, 107, 26, 0.2);
 }
 
-/* EVE style button */
 .eve-button {
   background-color: var(--accent-primary);
   color: white;
@@ -95,7 +88,6 @@ body {
   transform: translateY(-1px);
 }
 
-/* Headers in Orbitron font */
 .eve-title {
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
@@ -108,7 +100,6 @@ body {
   color: var(--accent-primary);
 }
 
-/* Status indicators */
 .eve-status-online {
   color: var(--status-online);
 }

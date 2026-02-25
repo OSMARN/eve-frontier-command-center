@@ -7,25 +7,64 @@ interface EventLogProps {
   onClear?: () => void;
 }
 
-export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
+const STORAGE_KEYS = {
+  FILTER: 'eventLogFilter',
+  EVENTS: 'eventLogEvents'
+};
+
+export function EventLog({ events: newEvents, formatEvent, onClear }: EventLogProps) {
   const logRef = useRef<HTMLDivElement>(null);
   
-  // Load filter from localStorage or default to 'all'
+  const [events, setEvents] = useState<BlockchainEvent[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.EVENTS);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map((e: any) => ({
+          ...e,
+          timestamp: new Date(e.timestamp)
+        }));
+      } catch (e) {
+        console.error('Failed to load saved events:', e);
+        return [];
+      }
+    }
+    return [];
+  });
+
   const [filter, setFilter] = useState<string>(() => {
-    const saved = localStorage.getItem('eventLogFilter');
+    const saved = localStorage.getItem(STORAGE_KEYS.FILTER);
     return saved || 'all';
   });
 
-  // Save filter to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('eventLogFilter', filter);
+    if (newEvents.length > 0) {
+      setEvents(prev => {
+        const combined = [...newEvents, ...prev];
+        const unique = combined.filter((event, index, self) =>
+          index === self.findIndex(e => 
+            e.timestamp.getTime() === event.timestamp.getTime()
+          )
+        );
+        
+        const limited = unique.slice(0, 1000);
+        
+        localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(limited));
+        
+        return limited;
+      });
+    }
+  }, [newEvents]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.FILTER, filter);
   }, [filter]);
 
   useEffect(() => {
-    if (logRef.current) {
+    if (logRef.current && filter === 'all') {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
-  }, [events]);
+  }, [events, filter]);
 
   const filteredEvents = events.filter(event => {
     if (filter === 'all') return true;
@@ -35,11 +74,23 @@ export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
     return true;
   });
 
-  const counts = {
+  const stats = {
     all: events.length,
     jump: events.filter(e => e.type === 'JumpEvent').length,
     inventory: events.filter(e => e.type === 'InventoryUpdateEvent').length,
     status: events.filter(e => e.type === 'AssemblyStatusEvent').length,
+    lastHour: events.filter(e => 
+      e.timestamp > new Date(Date.now() - 60 * 60 * 1000)
+    ).length,
+    lastDay: events.filter(e => 
+      e.timestamp > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    ).length
+  };
+
+  const handleClear = () => {
+    setEvents([]);
+    localStorage.removeItem(STORAGE_KEYS.EVENTS);
+    if (onClear) onClear();
   };
 
   return (
@@ -84,34 +135,34 @@ export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
             active={filter === 'all'} 
             onClick={() => setFilter('all')}
           >
-            All ({counts.all})
+            All ({stats.all})
           </FilterButton>
           <FilterButton 
             active={filter === 'jump'} 
             onClick={() => setFilter('jump')} 
             color="#00b8ff"
           >
-            🚪 ({counts.jump})
+            🚪 ({stats.jump})
           </FilterButton>
           <FilterButton 
             active={filter === 'inventory'} 
             onClick={() => setFilter('inventory')} 
             color="#ffaa00"
           >
-            📦 ({counts.inventory})
+            📦 ({stats.inventory})
           </FilterButton>
           <FilterButton 
             active={filter === 'status'} 
             onClick={() => setFilter('status')} 
             color="#00ff95"
           >
-            ⚡ ({counts.status})
+            ⚡ ({stats.status})
           </FilterButton>
         </div>
 
-        {onClear && events.length > 0 && (
+        {events.length > 0 && (
           <button
-            onClick={onClear}
+            onClick={handleClear}
             style={{
               backgroundColor: 'transparent',
               border: '1px solid var(--border-color)',
@@ -121,10 +172,35 @@ export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
               cursor: 'pointer'
             }}
           >
-            Clear
+            Clear History
           </button>
         )}
       </div>
+
+      {events.length > 0 && (
+        <div style={{
+          display: 'flex',
+          gap: '15px',
+          marginBottom: '10px',
+          padding: '8px',
+          backgroundColor: 'var(--bg-card)',
+          border: '1px solid var(--border-color)',
+          fontSize: '0.8rem'
+        }}>
+          <div>
+            <span style={{ color: 'var(--text-secondary)' }}>Last Hour: </span>
+            <span style={{ color: '#FF4700', fontWeight: 'bold' }}>{stats.lastHour}</span>
+          </div>
+          <div>
+            <span style={{ color: 'var(--text-secondary)' }}>Last 24h: </span>
+            <span style={{ color: '#FF4700', fontWeight: 'bold' }}>{stats.lastDay}</span>
+          </div>
+          <div>
+            <span style={{ color: 'var(--text-secondary)' }}>Total: </span>
+            <span style={{ color: '#FF4700', fontWeight: 'bold' }}>{stats.all}</span>
+          </div>
+        </div>
+      )}
 
       <div
         ref={logRef}
@@ -153,7 +229,7 @@ export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
             const formatted = formatEvent(event);
             return (
               <div
-                key={index}
+                key={`${event.timestamp.getTime()}-${index}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

@@ -1,4 +1,3 @@
-// WebSocket service - using polling fallback
 export const RPC_URL = 'http://127.0.0.1:9000';
 
 type EventCallback = (data: any) => void;
@@ -9,7 +8,6 @@ class PollingService {
   private lastChecked: number = Date.now();
   private jumpCount: number = 0;
 
-  // Start polling for events
   startPolling(intervalMs: number = 5000) {
     if (this.interval) return;
 
@@ -20,7 +18,6 @@ class PollingService {
     console.log('Polling started');
   }
 
-  // Stop polling
   stopPolling() {
     if (this.interval) {
       clearInterval(this.interval);
@@ -29,14 +26,12 @@ class PollingService {
     }
   }
 
-  // Check for new events (mock implementation)
   private async checkForEvents() {
     try {
-      // Generate different types of events
-      if (Math.random() < 0.2) { // 20% chance of JumpEvent
+      if (Math.random() < 0.2) {
         this.generateJumpEvent();
       }
-      if (Math.random() < 0.3) { // 30% chance of other events
+      if (Math.random() < 0.3) {
         const mockEvent = this.generateMockEvent();
         this.notifySubscribers('event', mockEvent);
       }
@@ -45,7 +40,6 @@ class PollingService {
     }
   }
 
-  // Generate JumpEvent specifically
   private generateJumpEvent() {
     this.jumpCount++;
     
@@ -75,7 +69,6 @@ class PollingService {
     console.log('JumpEvent generated:', jumpEvent.data);
   }
 
-  // Generate mock events for demonstration
   private generateMockEvent() {
     const eventTypes = [
       {
@@ -105,7 +98,6 @@ class PollingService {
     };
   }
 
-  // Subscribe to events
   subscribeToEvents(callback: EventCallback) {
     if (!this.subscribers.has('event')) {
       this.subscribers.set('event', []);
@@ -114,7 +106,6 @@ class PollingService {
     this.startPolling();
   }
 
-  // Unsubscribe from events
   unsubscribeFromEvents(callback: EventCallback) {
     const callbacks = this.subscribers.get('event') || [];
     const index = callbacks.indexOf(callback);
@@ -122,13 +113,11 @@ class PollingService {
       callbacks.splice(index, 1);
     }
     
-    // Stop polling if no subscribers left
     if (this.subscribers.get('event')?.length === 0) {
       this.stopPolling();
     }
   }
 
-  // Notify all subscribers
   private notifySubscribers(eventType: string, data: any) {
     const callbacks = this.subscribers.get(eventType) || [];
     callbacks.forEach(cb => cb(data));

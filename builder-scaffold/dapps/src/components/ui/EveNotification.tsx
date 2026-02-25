@@ -26,7 +26,7 @@ export function EveNotification({ message, duration = 5000, onClose }: EveNotifi
       <div style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border-color)',
-        padding: '2rem 2rem 4rem 2rem',  // Еще больше нижний padding
+        padding: '2rem 2rem 4rem 2rem',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
         position: 'relative',
         textAlign: 'center'
@@ -69,7 +69,6 @@ export function EveNotification({ message, duration = 5000, onClose }: EveNotifi
           borderRight: '2px solid #FF4700'
         }} />
 
-        {/* Message */}
         <p style={{
           margin: 0,
           color: 'var(--text-primary)',
@@ -80,12 +79,11 @@ export function EveNotification({ message, duration = 5000, onClose }: EveNotifi
           {message}
         </p>
 
-        {/* Close button at bottom center - еще ниже */}
         <button
           onClick={onClose}
           style={{
             position: 'absolute',
-            bottom: '1.5rem',  // Увеличил отступ
+            bottom: '1.5rem',
             left: '50%',
             transform: 'translateX(-50%)',
             background: 'none',

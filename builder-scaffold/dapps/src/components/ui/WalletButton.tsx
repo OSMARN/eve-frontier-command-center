@@ -27,10 +27,10 @@ export function WalletButton({
         display: 'flex',
         alignItems: 'center',
         gap: '1rem',
-        padding: '0.75rem 1.5rem',  // Увеличил паддинги
+        padding: '0.75rem 1.5rem',
         backgroundColor: 'var(--bg-secondary)',
         border: '1px solid var(--border-color)',
-        minHeight: '60px',  // Увеличил высоту
+        minHeight: '60px',
         boxSizing: 'border-box'
       }}>
         <div style={{ textAlign: 'right' }}>
@@ -70,7 +70,7 @@ export function WalletButton({
       style={{
         opacity: isConnecting ? 0.7 : 1,
         cursor: isConnecting ? 'not-allowed' : 'pointer',
-        minHeight: '60px',  // Та же высота
+        minHeight: '60px',
         padding: '0 2rem',
         display: 'flex',
         alignItems: 'center',

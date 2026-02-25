@@ -44,7 +44,6 @@ export function useWallet() {
     });
   }, []);
 
-  // New function to update balance directly (for demo mode)
   const updateBalance = useCallback((newBalance: string) => {
     setWallet(prev => ({
       ...prev,
@@ -84,7 +83,7 @@ export function useWallet() {
     connect,
     disconnect,
     refreshBalance,
-    updateBalance,  // New function for demo mode
+    updateBalance,
     formatAddress,
     formatBalance,
   };
