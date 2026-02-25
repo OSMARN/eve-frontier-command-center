@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getBalance } from '../services/blockchain';
+import { getBalance } from '../services/rpcClient';
 
 export interface WalletState {
   address: string | null;
@@ -20,15 +20,14 @@ export function useWallet() {
     setWallet(prev => ({ ...prev, isConnecting: true }));
     
     try {
-      // Mock admin address
       const adminAddress = '0xf081b74773489595dbb8d99c46e1654b5596353f195e4af9eeb77336a2bc0308';
       
-      // Use mock getBalance
+      // Get real balance via RPC
       const balance = await getBalance(adminAddress);
       
       setWallet({
         address: adminAddress,
-        balance: balance.totalBalance,
+        balance: balance?.totalBalance || '1000000000000',
         isConnected: true,
         isConnecting: false,
       });

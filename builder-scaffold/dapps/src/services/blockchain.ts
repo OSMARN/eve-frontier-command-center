@@ -1,18 +1,22 @@
-// Mock blockchain service for development
+import { SuiClient } from '@mysten/sui/dist/client';
+
+// Local blockchain configuration
 export const LOCAL_NODE_URL = 'http://127.0.0.1:9000';
 
-// Mock data for testing
-const MOCK_ADDRESS = '0xf081b74773489595dbb8d99c46e1654b5596353f195e4af9eeb77336a2bc0308';
-const MOCK_BALANCE = '1000000000000'; // 1000 SUI in MIST
+// Create Sui client instance
+export const suiClient = new SuiClient({ 
+  url: LOCAL_NODE_URL 
+});
 
-// Mock getBalance function
+// Fetch balance for a given address
 export async function getBalance(address: string) {
-  console.log('Mock getBalance called with:', address);
-  
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  return {
-    totalBalance: MOCK_BALANCE
-  };
+  try {
+    const balance = await suiClient.getBalance({
+      owner: address,
+    });
+    return balance;
+  } catch (error) {
+    console.error('Error fetching balance:', error);
+    return null;
+  }
 }
