@@ -6,7 +6,6 @@ export function useAssemblies(address: string | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load mock assemblies
   const loadAssemblies = useCallback(async () => {
     if (!address) {
       setAssemblies([]);
@@ -17,7 +16,6 @@ export function useAssemblies(address: string | null) {
     setError(null);
     
     try {
-      // Always use mock data for testing
       setAssemblies(MOCK_ASSEMBLIES);
     } catch (err) {
       console.error('Failed to load assemblies:', err);
@@ -31,7 +29,6 @@ export function useAssemblies(address: string | null) {
     loadAssemblies();
   }, [address, loadAssemblies]);
 
-  // Toggle assembly status
   const toggleAssemblyStatus = useCallback((assemblyId: string) => {
     setAssemblies(prev => 
       prev.map(a => 
@@ -42,10 +39,9 @@ export function useAssemblies(address: string | null) {
     );
   }, []);
 
-  // Set gate toll
   const setGateToll = useCallback((gateId: string, toll: number) => {
-    setAssemblies(prev => 
-      prev.map(a => 
+    setAssemblies(prev =>
+      prev.map(a =>
         a.id === gateId && a.type === 'gate'
           ? { ...a, toll }
           : a
@@ -53,13 +49,10 @@ export function useAssemblies(address: string | null) {
     );
   }, []);
 
-  // Set gate access
   const setGateAccess = useCallback((gateId: string, isPublic: boolean) => {
     console.log(`Gate ${gateId} access set to: ${isPublic ? 'public' : 'restricted'}`);
-    // In a real app, this would update the blockchain
   }, []);
 
-  // Calculate clan stats
   const stats = {
     total: assemblies.length,
     online: assemblies.filter(a => a.isOnline).length,

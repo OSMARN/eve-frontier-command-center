@@ -1,42 +1,38 @@
 import React, { useState } from 'react';
 import { Assembly } from '../../types/assembly';
-import { useTransactions } from '../../hooks/useTransactions';
 
 interface AssemblyListProps {
   assemblies: Assembly[];
   loading: boolean;
   ownerAddress: string | null;
-  onStatusChange?: () => void; // Callback to refresh data
+  onToggleStatus?: (assemblyId: string) => void;
+  onSetToll?: (gateId: string, toll: number) => void;
+  onSetAccess?: (gateId: string, isPublic: boolean) => void;
 }
 
 export function AssemblyList({ 
   assemblies, 
   loading, 
   ownerAddress,
-  onStatusChange 
+  onToggleStatus,
+  onSetToll,
+  onSetAccess
 }: AssemblyListProps) {
   const [expandedAssembly, setExpandedAssembly] = useState<string | null>(null);
   const [tollInput, setTollInput] = useState<Record<string, string>>({});
-  
-  const { 
-    toggleStatus, 
-    setToll, 
-    setAccess, 
-    isProcessing 
-  } = useTransactions(ownerAddress);
 
   if (loading) {
     return (
-      <div className="eve-card" style={{ padding: '1rem' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>Loading assemblies...</p>
+      <div className="eve-card" style={{ padding: '0.75rem', height: '100%', boxSizing: 'border-box' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Loading assemblies...</p>
       </div>
     );
   }
 
   if (assemblies.length === 0) {
     return (
-      <div className="eve-card" style={{ padding: '1rem' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>No assemblies found</p>
+      <div className="eve-card" style={{ padding: '0.75rem', height: '100%', boxSizing: 'border-box' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No assemblies found</p>
       </div>
     );
   }
@@ -54,130 +50,123 @@ export function AssemblyList({
     return isOnline ? 'var(--status-online)' : 'var(--status-danger)';
   };
 
-  const handleToggleStatus = async (assembly: Assembly) => {
-    if (!ownerAddress) return;
-    
-    const result = await toggleStatus(
-      assembly.id,
-      assembly.name,
-      assembly.isOnline
-    );
-    
-    if (result?.success && onStatusChange) {
-      // Wait a bit for blockchain to update
-      setTimeout(onStatusChange, 2000);
+  const getTypeColor = (type: string) => {
+    switch(type) {
+      case 'gate': return '#00b8ff';
+      case 'storage': return '#ffaa00';
+      case 'turret': return '#ff4444';
+      default: return 'var(--text-secondary)';
     }
   };
 
-  const handleSetToll = async (assembly: Assembly) => {
-    if (!ownerAddress || assembly.type !== 'gate') return;
+  const handleToggleStatus = (assembly: Assembly) => {
+    if (onToggleStatus) {
+      onToggleStatus(assembly.id);
+    }
+  };
+
+  const handleSetToll = (assembly: Assembly) => {
+    if (!onSetToll || assembly.type !== 'gate') return;
     
     const tollValue = parseInt(tollInput[assembly.id] || '0');
     if (isNaN(tollValue)) return;
     
-    const result = await setToll(
-      assembly.id,
-      assembly.name,
-      tollValue
-    );
-    
-    if (result?.success) {
-      setTollInput(prev => ({ ...prev, [assembly.id]: '' }));
-      if (onStatusChange) setTimeout(onStatusChange, 2000);
-    }
+    onSetToll(assembly.id, tollValue);
+    setTollInput(prev => ({ ...prev, [assembly.id]: '' }));
   };
 
-  const handleSetAccess = async (assembly: Assembly, isPublic: boolean) => {
-    if (!ownerAddress || assembly.type !== 'gate') return;
-    
-    await setAccess(
-      assembly.id,
-      assembly.name,
-      isPublic,
-      isPublic ? undefined : 'tribe123' // Mock tribe ID
-    );
-    
-    if (onStatusChange) setTimeout(onStatusChange, 2000);
+  const handleSetAccess = (assembly: Assembly, isPublic: boolean) => {
+    if (!onSetAccess || assembly.type !== 'gate') return;
+    onSetAccess(assembly.id, isPublic);
   };
 
   return (
-    <div className="eve-card" style={{ padding: '1.5rem' }}>
+    <div className="eve-card" style={{ 
+      padding: '0.75rem', 
+      height: '100%', 
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <h3 style={{ 
-        margin: '0 0 1rem 0', 
+        margin: '0 0 0.5rem 0', 
         color: 'var(--text-primary)',
         fontFamily: 'Orbitron, sans-serif',
-        fontSize: '1rem'
+        fontSize: '0.9rem'
       }}>
         CLAN ASSEMBLIES ({assemblies.length})
       </h3>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ 
+        flex: 1,
+        overflowY: 'auto',
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '0.5rem',
+        minHeight: 0
+      }}>
         {assemblies.map((assembly) => (
           <div
             key={assembly.id}
             style={{
-              padding: '1rem',
+              padding: '0.5rem',
               backgroundColor: 'var(--bg-secondary)',
               border: '1px solid var(--border-color)',
-              borderRadius: '4px',
+              borderLeft: `4px solid ${getTypeColor(assembly.type)}`,
             }}
           >
-            {/* Main row - always visible */}
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: expandedAssembly === assembly.id ? '1rem' : 0,
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize: '0.9rem'
             }}
             onClick={() => setExpandedAssembly(
               expandedAssembly === assembly.id ? null : assembly.id
             )}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.2rem' }}>{getTypeIcon(assembly.type)}</span>
+                <span style={{ fontSize: '1rem' }}>{getTypeIcon(assembly.type)}</span>
                 <span style={{ fontWeight: 'bold' }}>{assembly.name}</span>
-                {assembly.type === 'gate' && (
+                {assembly.type === 'gate' && assembly.toll !== undefined && (
                   <span style={{ 
-                    fontSize: '0.8rem',
+                    fontSize: '0.7rem',
                     backgroundColor: 'var(--bg-card)',
-                    padding: '0.2rem 0.5rem',
-                    borderRadius: '4px',
-                    color: 'var(--text-secondary)'
+                    padding: '0.1rem 0.3rem',
+                    color: '#FF4700'
                   }}>
-                    Gate
+                    {assembly.toll} EVE
                   </span>
                 )}
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ 
                   color: getStatusColor(assembly.isOnline),
-                  fontSize: '0.9rem'
+                  fontSize: '0.8rem'
                 }}>
                   {assembly.isOnline ? '● ONLINE' : '○ OFFLINE'}
                 </span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '1.2rem' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
                   {expandedAssembly === assembly.id ? '▼' : '▶'}
                 </span>
               </div>
             </div>
 
-            {/* Expanded controls */}
             {expandedAssembly === assembly.id && (
               <div style={{
-                marginTop: '1rem',
-                paddingTop: '1rem',
+                marginTop: '0.5rem',
+                paddingTop: '0.5rem',
                 borderTop: '1px solid var(--border-color)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '1rem'
+                gap: '0.5rem',
+                fontSize: '0.8rem'
               }}>
-                {/* Basic info */}
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
-                  gap: '0.5rem',
-                  fontSize: '0.9rem',
+                  gap: '0.25rem',
                   color: 'var(--text-secondary)'
                 }}>
                   {assembly.fuelAmount !== undefined && (
@@ -197,22 +186,29 @@ export function AssemblyList({
                       </span>
                     </>
                   )}
+
+                  {assembly.type === 'gate' && assembly.toll !== undefined && (
+                    <>
+                      <span>Current Toll:</span>
+                      <span style={{ color: '#FF4700', fontWeight: 'bold' }}>
+                        {assembly.toll} EVE
+                      </span>
+                    </>
+                  )}
                 </div>
 
-                {/* Gate-specific controls */}
                 {assembly.type === 'gate' && (
                   <>
-                    {/* Toll control */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem'
+                      gap: '0.25rem'
                     }}>
-                      <span style={{ color: 'var(--text-secondary)', width: '60px' }}>
+                      <span style={{ color: 'var(--text-secondary)', width: '50px' }}>
                         Toll:
                       </span>
                       <input
-                        type="number"
+                        type="text"
                         value={tollInput[assembly.id] || ''}
                         onChange={(e) => setTollInput({
                           ...tollInput,
@@ -221,62 +217,58 @@ export function AssemblyList({
                         placeholder={assembly.toll?.toString() || '0'}
                         style={{
                           flex: 1,
-                          padding: '0.3rem 0.5rem',
+                          padding: '0.2rem 0.3rem',
                           backgroundColor: 'var(--bg-primary)',
                           border: '1px solid var(--border-color)',
-                          borderRadius: '4px',
-                          color: 'var(--text-primary)'
+                          color: 'var(--text-primary)',
+                          fontSize: '0.8rem'
                         }}
                       />
                       <span style={{ color: 'var(--text-secondary)' }}>EVE</span>
                       <button
                         onClick={() => handleSetToll(assembly)}
-                        disabled={isProcessing}
                         className="eve-button"
                         style={{
-                          padding: '0.3rem 1rem',
-                          fontSize: '0.9rem'
+                          padding: '0.2rem 0.5rem',
+                          fontSize: '0.8rem'
                         }}
                       >
                         Set
                       </button>
                     </div>
 
-                    {/* Access control */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem'
+                      gap: '0.25rem'
                     }}>
-                      <span style={{ color: 'var(--text-secondary)', width: '60px' }}>
+                      <span style={{ color: 'var(--text-secondary)', width: '50px' }}>
                         Access:
                       </span>
                       <button
                         onClick={() => handleSetAccess(assembly, true)}
-                        disabled={isProcessing}
                         style={{
                           flex: 1,
-                          padding: '0.3rem',
+                          padding: '0.2rem',
                           backgroundColor: 'var(--bg-primary)',
                           border: '1px solid var(--border-color)',
-                          borderRadius: '4px',
                           color: 'var(--text-primary)',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          fontSize: '0.8rem'
                         }}
                       >
                         Public
                       </button>
                       <button
                         onClick={() => handleSetAccess(assembly, false)}
-                        disabled={isProcessing}
                         style={{
                           flex: 1,
-                          padding: '0.3rem',
+                          padding: '0.2rem',
                           backgroundColor: 'var(--bg-primary)',
                           border: '1px solid var(--border-color)',
-                          borderRadius: '4px',
                           color: 'var(--text-primary)',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          fontSize: '0.8rem'
                         }}
                       >
                         Restricted
@@ -285,26 +277,46 @@ export function AssemblyList({
                   </>
                 )}
 
-                {/* Toggle button */}
+                {assembly.type === 'storage' && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '0.25rem',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    {assembly.itemCount !== undefined && (
+                      <>
+                        <span>Items:</span>
+                        <span style={{ color: 'var(--text-primary)' }}>
+                          {assembly.itemCount} / {assembly.capacity}
+                        </span>
+                      </>
+                    )}
+                    {assembly.value !== undefined && (
+                      <>
+                        <span>Value:</span>
+                        <span style={{ color: '#FF4700', fontWeight: 'bold' }}>
+                          {assembly.value} EVE
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <button
                   onClick={() => handleToggleStatus(assembly)}
-                  disabled={isProcessing}
                   className="eve-button"
                   style={{
                     width: '100%',
                     backgroundColor: assembly.isOnline 
                       ? 'var(--status-danger)' 
                       : 'var(--status-online)',
-                    opacity: isProcessing ? 0.7 : 1,
-                    border: 'none'
+                    border: 'none',
+                    padding: '0.3rem',
+                    fontSize: '0.8rem'
                   }}
                 >
-                  {isProcessing 
-                    ? 'Processing...' 
-                    : assembly.isOnline 
-                      ? 'Take Offline' 
-                      : 'Bring Online'
-                  }
+                  {assembly.isOnline ? 'Take Offline' : 'Bring Online'}
                 </button>
               </div>
             )}

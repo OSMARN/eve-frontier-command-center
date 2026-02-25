@@ -1,7 +1,4 @@
-// WebSocket service - currently disabled (Sui version doesn't support WebSocket)
-// Using polling as fallback
-
-export const WS_URL = 'ws://127.0.0.1:9000';
+// WebSocket service - using polling fallback
 export const RPC_URL = 'http://127.0.0.1:9000';
 
 type EventCallback = (data: any) => void;
@@ -10,6 +7,7 @@ class PollingService {
   private subscribers: Map<string, EventCallback[]> = new Map();
   private interval: NodeJS.Timeout | null = null;
   private lastChecked: number = Date.now();
+  private jumpCount: number = 0;
 
   // Start polling for events
   startPolling(intervalMs: number = 5000) {
@@ -34,9 +32,11 @@ class PollingService {
   // Check for new events (mock implementation)
   private async checkForEvents() {
     try {
-      // In a real implementation, you would fetch recent transactions
-      // For now, generate mock events occasionally
-      if (Math.random() < 0.3) { // 30% chance of new event
+      // Generate different types of events
+      if (Math.random() < 0.2) { // 20% chance of JumpEvent
+        this.generateJumpEvent();
+      }
+      if (Math.random() < 0.3) { // 30% chance of other events
         const mockEvent = this.generateMockEvent();
         this.notifySubscribers('event', mockEvent);
       }
@@ -45,15 +45,39 @@ class PollingService {
     }
   }
 
+  // Generate JumpEvent specifically
+  private generateJumpEvent() {
+    this.jumpCount++;
+    
+    const gates = ['Alpha Gate', 'Beta Gate', 'Gamma Gate', 'Delta Gate'];
+    const fromGate = gates[Math.floor(Math.random() * gates.length)];
+    const toGate = gates[Math.floor(Math.random() * gates.length)];
+    
+    const jumpEvent = {
+      type: 'JumpEvent',
+      data: {
+        gateId: fromGate.toLowerCase().replace(' ', '-'),
+        fromGate: fromGate,
+        toGate: toGate,
+        character: `0x${Math.random().toString(16).slice(2, 10)}`,
+        toll: Math.floor(Math.random() * 100),
+        timestamp: new Date().toISOString()
+      },
+      timestamp: new Date(),
+      display: {
+        icon: '🚪',
+        text: `Jump: ${fromGate} → ${toGate}`,
+        color: '#00b8ff'
+      }
+    };
+    
+    this.notifySubscribers('event', jumpEvent);
+    console.log('JumpEvent generated:', jumpEvent.data);
+  }
+
   // Generate mock events for demonstration
   private generateMockEvent() {
     const eventTypes = [
-      {
-        type: 'JumpEvent',
-        icon: '🚪',
-        text: 'Gate jump detected',
-        color: '#00b8ff'
-      },
       {
         type: 'InventoryUpdateEvent',
         icon: '📦',
@@ -87,7 +111,7 @@ class PollingService {
       this.subscribers.set('event', []);
     }
     this.subscribers.get('event')!.push(callback);
-    this.startPolling(); // Start polling when first subscriber appears
+    this.startPolling();
   }
 
   // Unsubscribe from events

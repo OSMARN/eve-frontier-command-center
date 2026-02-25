@@ -13,14 +13,13 @@ export interface BlockchainEvent {
 }
 
 export function useWebSocket() {
-  const [isConnected, setIsConnected] = useState(true); // Always true for polling
+  const [isConnected, setIsConnected] = useState(true);
   const [events, setEvents] = useState<BlockchainEvent[]>([]);
   const [lastEvent, setLastEvent] = useState<BlockchainEvent | null>(null);
 
   useEffect(() => {
-    // Handle incoming events
     const handleEvent = (event: BlockchainEvent) => {
-      setEvents(prev => [event, ...prev].slice(0, 50)); // Keep last 50 events
+      setEvents(prev => [event, ...prev].slice(0, 50));
       setLastEvent(event);
     };
 
@@ -31,17 +30,14 @@ export function useWebSocket() {
     };
   }, []);
 
-  // Clear event history
   const clearEvents = useCallback(() => {
     setEvents([]);
     setLastEvent(null);
   }, []);
 
-  // Format event for display
   const formatEvent = useCallback((event: BlockchainEvent) => {
     const time = event.timestamp.toLocaleTimeString();
     
-    // Use display info if available (from mock events)
     if (event.display) {
       return {
         time,
@@ -51,7 +47,6 @@ export function useWebSocket() {
       };
     }
     
-    // Fallback formatting based on event type
     switch (event.type) {
       case 'JumpEvent':
         return {

@@ -19,6 +19,10 @@
   --border-color: #2a2f3a;
 }
 
+* {
+  border-radius: 0 !important;  /* Убираем все скругления */
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -40,7 +44,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--accent-primary);
-  border-radius: 4px;
+  border-radius: 0;  /* Прямоугольный скроллбар */
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -51,7 +55,6 @@ body {
 .eve-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
   padding: 1.5rem;
   transition: all 0.2s;
 }
@@ -67,7 +70,6 @@ body {
   color: white;
   border: none;
   padding: 0.5rem 1.5rem;
-  border-radius: 4px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   font-size: 0.9rem;

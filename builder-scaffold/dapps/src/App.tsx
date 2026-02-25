@@ -1,41 +1,112 @@
-import React from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useWallet } from './hooks/useWallet';
 import { useAssemblies } from './hooks/useAssemblies';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useTransactions } from './hooks/useTransactions';
+import { useEveNotification } from './hooks/useEveNotification';
 import { WalletButton } from './components/ui/WalletButton';
 import { AssemblyList } from './components/dashboard/AssemblyList';
 import { EventLog } from './components/dashboard/EventLog';
 import { TransactionToast } from './components/ui/TransactionToast';
+import { EveNotification } from './components/ui/EveNotification';
+import { EveConfirmation } from './components/ui/EveConfirmation';
+import { Marketplace } from './components/marketplace/Marketplace';
 import './styles/eve-theme.css';
+
+// Мемоизированные компоненты для оптимизации
+const MemoizedAssemblyList = React.memo(AssemblyList);
+const MemoizedEventLog = React.memo(EventLog);
+const MemoizedMarketplace = React.memo(Marketplace);
+const MemoizedWalletButton = React.memo(WalletButton);
 
 function App() {
   const wallet = useWallet();
-  const { assemblies, loading, stats, refreshAssemblies } = useAssemblies(wallet.address);
+  const { 
+    assemblies, 
+    loading, 
+    stats, 
+    toggleAssemblyStatus,
+    setGateToll,
+    setGateAccess 
+  } = useAssemblies(wallet.address);
+  
   const { events, clearEvents, formatEvent, isConnected } = useWebSocket();
   const { pendingTransactions, clearOldTransactions } = useTransactions(wallet.address);
+  const { 
+    notifications, 
+    confirmation,
+    showNotification, 
+    removeNotification,
+    showConfirmation,
+    closeConfirmation 
+  } = useEveNotification();
+  
+  const storages = useMemo(() => 
+    assemblies.filter(a => a.type === 'storage'), 
+    [assemblies]
+  );
+  
+  const [showMarketplace, setShowMarketplace] = useState(false);
+
+  const handleBalanceUpdate = useCallback((newBalance: string) => {
+    wallet.updateBalance(newBalance);
+  }, [wallet]);
+
+  const toggleMarketplace = useCallback(() => {
+    setShowMarketplace(prev => !prev);
+  }, []);
+
+  // Мемоизированные значения для статистики
+  const memoizedStats = useMemo(() => stats, [stats]);
 
   return (
     <div style={{ 
-      minHeight: '100vh', 
-      padding: '2rem',
+      height: '100vh',
+      padding: '20px',
       backgroundColor: 'var(--bg-primary)',
       color: 'var(--text-primary)',
+      display: 'flex',
+      flexDirection: 'column',
+      boxSizing: 'border-box',
+      overflow: 'hidden'
     }}>
+      {/* EVE-style notifications */}
+      {notifications.map(notification => (
+        <EveNotification
+          key={notification.id}
+          message={notification.message}
+          onClose={() => removeNotification(notification.id)}
+        />
+      ))}
+
+      {/* EVE-style confirmation */}
+      {confirmation && (
+        <EveConfirmation
+          key={confirmation.id}
+          message={confirmation.message}
+          onConfirm={() => {
+            confirmation.onConfirm();
+            closeConfirmation();
+          }}
+          onCancel={closeConfirmation}
+        />
+      )}
+
+      {/* Header - фиксированная высота */}
       <header style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '2rem',
-        padding: '1rem',
+        marginBottom: '20px',
+        padding: '15px 20px',
         backgroundColor: 'var(--bg-secondary)',
         border: '1px solid var(--border-color)',
-        borderRadius: '4px',
+        flexShrink: 0
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <h1 className="eve-title" style={{ 
             margin: 0, 
-            fontSize: '2rem',
+            fontSize: 'clamp(1.2rem, 3vw, 2rem)',
             letterSpacing: '1px'
           }}>
             <span style={{ color: '#FF4700' }}>FRONTIER</span> COMMAND CENTER
@@ -49,49 +120,193 @@ function App() {
           }} />
         </div>
         
-        <WalletButton
-          isConnected={wallet.isConnected}
-          isConnecting={wallet.isConnecting}
-          address={wallet.address}
-          balance={wallet.balance}
-          onConnect={wallet.connect}
-          onDisconnect={wallet.disconnect}
-          formatAddress={wallet.formatAddress}
-          formatBalance={wallet.formatBalance}
-        />
+        <div style={{ 
+          display: 'flex', 
+          gap: '15px', 
+          alignItems: 'center'
+        }}>
+          <button
+            onClick={toggleMarketplace}
+            className="eve-button-secondary"
+            style={{ 
+              padding: '10px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              border: '1px solid var(--accent-secondary)',
+              backgroundColor: 'transparent',
+              color: 'var(--accent-secondary)',
+              cursor: 'pointer',
+              fontSize: 'clamp(0.8rem, 1.5vw, 1rem)',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {showMarketplace ? '◀ Back to Dashboard' : '📦 Marketplace'}
+          </button>
+          <MemoizedWalletButton
+            isConnected={wallet.isConnected}
+            isConnecting={wallet.isConnecting}
+            address={wallet.address}
+            balance={wallet.balance}
+            onConnect={wallet.connect}
+            onDisconnect={wallet.disconnect}
+            formatAddress={wallet.formatAddress}
+            formatBalance={wallet.formatBalance}
+          />
+        </div>
       </header>
 
-      {wallet.isConnected ? (
-        <>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '2fr 1fr',
-            gap: '1.5rem',
-          }}>
-            {/* Left column - Assembly List with controls */}
-            <AssemblyList 
-              assemblies={assemblies} 
-              loading={loading} 
-              ownerAddress={wallet.address}
-              onStatusChange={refreshAssemblies}
-            />
+      {/* Main content - занимает всё оставшееся место */}
+      <div style={{
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        {wallet.isConnected ? (
+          <>
+            {showMarketplace ? (
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                <MemoizedMarketplace 
+                  storages={storages} 
+                  userBalance={wallet.balance}
+                  onShowNotification={showNotification}
+                  onShowConfirmation={showConfirmation}
+                  onBalanceUpdate={handleBalanceUpdate}
+                />
+              </div>
+            ) : (
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+                minHeight: 0
+              }}>
+                {/* Top row - 60% высоты */}
+                <div style={{
+                  flex: 3,
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1fr',
+                  gap: '20px',
+                  minHeight: 0
+                }}>
+                  <div style={{ minHeight: 0, overflow: 'auto' }}>
+                    <MemoizedAssemblyList 
+                      assemblies={assemblies} 
+                      loading={loading} 
+                      ownerAddress={wallet.address}
+                      onToggleStatus={toggleAssemblyStatus}
+                      onSetToll={setGateToll}
+                      onSetAccess={setGateAccess}
+                    />
+                  </div>
 
-            {/* Right column - Clan Stats */}
-            <div className="eve-card" style={{ padding: '1.5rem' }}>
+                  <div style={{ minHeight: 0, overflow: 'auto' }}>
+                    <div className="eve-card" style={{ 
+                      padding: '20px', 
+                      height: '100%', 
+                      boxSizing: 'border-box',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '10px', 
+                        marginBottom: '15px'
+                      }}>
+                        <svg 
+                          width="24" 
+                          height="24" 
+                          viewBox="0 0 30 30" 
+                          fill="none" 
+                          xmlns="http://www.w3.org/2000/svg"
+                          style={{ display: 'block', flexShrink: 0 }}
+                        >
+                          <rect x="0.5" y="0.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                          <rect x="1" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                          <rect x="8.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                          <rect x="0.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                          <rect x="9" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                          <rect x="9" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                          <rect x="1" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                          <rect x="8.5" y="24.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                          <rect x="16.5" y="8.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                          <rect x="17" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                          <rect x="17" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                          <rect x="16.5" y="24.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                          <rect x="24.5" y="0.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                          <rect x="24.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
+                          <rect x="25" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                          <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
+                        </svg>
+                        <h2 className="eve-title" style={{ 
+                          margin: 0, 
+                          fontSize: 'clamp(1rem, 2vw, 1.3rem)',
+                          lineHeight: '1' 
+                        }}>
+                          CLAN STATISTICS
+                        </h2>
+                      </div>
+
+                      <div style={{ 
+                        flex: 1,
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: 'clamp(5px, 1vh, 10px)',
+                        overflow: 'auto'
+                      }}>
+                        <StatRow label="Total Assemblies" value={memoizedStats.total} />
+                        <StatRow label="Online" value={`${memoizedStats.online}/${memoizedStats.total}`} color="var(--status-online)" />
+                        <StatRow label="Gates" value={memoizedStats.gates} />
+                        <StatRow label="Storages" value={memoizedStats.storages} />
+                        <StatRow label="Turrets" value={memoizedStats.turrets} />
+                        <StatRow label="Total Fuel" value={memoizedStats.totalFuel} />
+                        <StatRow label="Total Value" value={`${memoizedStats.totalValue} EVE`} color="#FF4700" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom row - 40% высоты */}
+                <div style={{
+                  flex: 2,
+                  minHeight: 0
+                }}>
+                  <MemoizedEventLog 
+                    events={events} 
+                    formatEvent={formatEvent}
+                    onClear={clearEvents}
+                  />
+                </div>
+              </div>
+            )}
+
+            <TransactionToast 
+              transactions={pendingTransactions}
+              onClose={clearOldTransactions}
+            />
+          </>
+        ) : (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+          }}>
+            <div className="eve-card" style={{ maxWidth: '400px', textAlign: 'center', padding: '30px' }}>
               <div style={{ 
                 display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.75rem', 
-                marginBottom: '1.5rem',
-                height: '2rem'
+                justifyContent: 'center', 
+                marginBottom: '20px'
               }}>
                 <svg 
-                  width="24" 
-                  height="24" 
+                  width="40" 
+                  height="40" 
                   viewBox="0 0 30 30" 
                   fill="none" 
                   xmlns="http://www.w3.org/2000/svg"
-                  style={{ display: 'block' }}
                 >
                   <rect x="0.5" y="0.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
                   <rect x="1" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
@@ -110,151 +325,30 @@ function App() {
                   <rect x="25" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
                   <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
                 </svg>
-                <h2 className="eve-title" style={{ 
-                  margin: 0, 
-                  fontSize: '1.3rem',
-                  lineHeight: '1' 
-                }}>
-                  CLAN STATISTICS
-                </h2>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  padding: '0.5rem',
-                  borderBottom: '1px solid var(--border-color)'
-                }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Total Assemblies</span>
-                  <span style={{ fontWeight: 'bold' }}>{stats.total}</span>
-                </div>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  padding: '0.5rem',
-                  borderBottom: '1px solid var(--border-color)'
-                }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Online</span>
-                  <span style={{ fontWeight: 'bold', color: 'var(--status-online)' }}>
-                    {stats.online}/{stats.total}
-                  </span>
-                </div>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  padding: '0.5rem',
-                  borderBottom: '1px solid var(--border-color)'
-                }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Gates</span>
-                  <span style={{ fontWeight: 'bold' }}>{stats.gates}</span>
-                </div>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  padding: '0.5rem',
-                  borderBottom: '1px solid var(--border-color)'
-                }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Storages</span>
-                  <span style={{ fontWeight: 'bold' }}>{stats.storages}</span>
-                </div>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  padding: '0.5rem',
-                  borderBottom: '1px solid var(--border-color)'
-                }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Total Fuel</span>
-                  <span style={{ fontWeight: 'bold' }}>{stats.totalFuel}</span>
-                </div>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  padding: '0.5rem',
-                }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Total Value</span>
-                  <span style={{ fontWeight: 'bold', color: '#FF4700' }}>
-                    {stats.totalValue} EVE
-                  </span>
-                </div>
+              <h2 className="eve-title" style={{ marginBottom: '15px', fontSize: '1.5rem' }}>
+                Welcome Commander
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                Connect your wallet to start managing your clan
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <MemoizedWalletButton
+                  isConnected={wallet.isConnected}
+                  isConnecting={wallet.isConnecting}
+                  address={wallet.address}
+                  balance={wallet.balance}
+                  onConnect={wallet.connect}
+                  onDisconnect={wallet.disconnect}
+                  formatAddress={wallet.formatAddress}
+                  formatBalance={wallet.formatBalance}
+                />
               </div>
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Event Log - takes full width below */}
-          <EventLog 
-            events={events} 
-            formatEvent={formatEvent}
-            onClear={clearEvents}
-          />
-
-          {/* Transaction Toasts */}
-          <TransactionToast 
-            transactions={pendingTransactions}
-            onClose={clearOldTransactions}
-          />
-        </>
-      ) : (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '300px',
-        }}>
-          <div className="eve-card" style={{ maxWidth: '400px', textAlign: 'center' }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              marginBottom: '1rem',
-              height: '2rem'
-            }}>
-              <svg 
-                width="32" 
-                height="32" 
-                viewBox="0 0 30 30" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-                style={{ display: 'block' }}
-              >
-                <rect x="0.5" y="0.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
-                <rect x="1" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-                <rect x="8.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
-                <rect x="0.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
-                <rect x="9" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-                <rect x="9" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-                <rect x="1" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-                <rect x="8.5" y="24.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
-                <rect x="16.5" y="8.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
-                <rect x="17" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-                <rect x="17" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-                <rect x="16.5" y="24.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
-                <rect x="24.5" y="0.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
-                <rect x="24.5" y="16.5" width="5" height="5" stroke="#FF4700" strokeOpacity="0.5" />
-                <rect x="25" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-                <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-              </svg>
-            </div>
-            <h2 className="eve-title" style={{ marginBottom: '1rem' }}>
-              Welcome Commander
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-              Connect your wallet to start managing your clan
-            </p>
-            <WalletButton
-              isConnected={wallet.isConnected}
-              isConnecting={wallet.isConnecting}
-              address={wallet.address}
-              balance={wallet.balance}
-              onConnect={wallet.connect}
-              onDisconnect={wallet.disconnect}
-              formatAddress={wallet.formatAddress}
-              formatBalance={wallet.formatBalance}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Add pulse animation */}
       <style>{`
         @keyframes pulse {
           0% { opacity: 1; }
@@ -265,5 +359,21 @@ function App() {
     </div>
   );
 }
+
+// Мемоизированный компонент для строк статистики
+const StatRow = React.memo(({ label, value, color }: { label: string; value: string | number; color?: string }) => {
+  return (
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'space-between',
+      padding: '5px 0',
+      borderBottom: '1px solid var(--border-color)',
+      fontSize: 'clamp(0.8rem, 1.5vw, 0.95rem)'
+    }}>
+      <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+      <span style={{ fontWeight: 'bold', color: color || 'var(--text-primary)' }}>{value}</span>
+    </div>
+  );
+});
 
 export default App;

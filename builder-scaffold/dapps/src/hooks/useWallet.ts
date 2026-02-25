@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { getBalance } from '../services/rpcClient';
 
 export interface WalletState {
@@ -16,13 +16,11 @@ export function useWallet() {
     isConnecting: false,
   });
 
-  const connect = async () => {
+  const connect = useCallback(async () => {
     setWallet(prev => ({ ...prev, isConnecting: true }));
     
     try {
       const adminAddress = '0xf081b74773489595dbb8d99c46e1654b5596353f195e4af9eeb77336a2bc0308';
-      
-      // Get real balance via RPC
       const balance = await getBalance(adminAddress);
       
       setWallet({
@@ -35,16 +33,40 @@ export function useWallet() {
       console.error('Connection error:', error);
       setWallet(prev => ({ ...prev, isConnecting: false }));
     }
-  };
+  }, []);
 
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
     setWallet({
       address: null,
       balance: null,
       isConnected: false,
       isConnecting: false,
     });
-  };
+  }, []);
+
+  // New function to update balance directly (for demo mode)
+  const updateBalance = useCallback((newBalance: string) => {
+    setWallet(prev => ({
+      ...prev,
+      balance: newBalance
+    }));
+  }, []);
+
+  const refreshBalance = useCallback(async () => {
+    if (!wallet.address) return;
+    
+    try {
+      const balance = await getBalance(wallet.address);
+      if (balance) {
+        setWallet(prev => ({
+          ...prev,
+          balance: balance.totalBalance
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    }
+  }, [wallet.address]);
 
   const formatAddress = (addr: string | null) => {
     if (!addr) return '';
@@ -61,6 +83,8 @@ export function useWallet() {
     ...wallet,
     connect,
     disconnect,
+    refreshBalance,
+    updateBalance,  // New function for demo mode
     formatAddress,
     formatBalance,
   };

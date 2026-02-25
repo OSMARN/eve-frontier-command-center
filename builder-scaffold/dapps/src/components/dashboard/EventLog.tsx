@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { BlockchainEvent, useWebSocket } from '../../hooks/useWebSocket';
 
 interface EventLogProps {
@@ -9,32 +9,61 @@ interface EventLogProps {
 
 export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
   const logRef = useRef<HTMLDivElement>(null);
+  
+  // Load filter from localStorage or default to 'all'
+  const [filter, setFilter] = useState<string>(() => {
+    const saved = localStorage.getItem('eventLogFilter');
+    return saved || 'all';
+  });
 
-  // Auto-scroll to bottom on new events
+  // Save filter to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('eventLogFilter', filter);
+  }, [filter]);
+
   useEffect(() => {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [events]);
 
+  const filteredEvents = events.filter(event => {
+    if (filter === 'all') return true;
+    if (filter === 'jump') return event.type === 'JumpEvent';
+    if (filter === 'inventory') return event.type === 'InventoryUpdateEvent';
+    if (filter === 'status') return event.type === 'AssemblyStatusEvent';
+    return true;
+  });
+
+  const counts = {
+    all: events.length,
+    jump: events.filter(e => e.type === 'JumpEvent').length,
+    inventory: events.filter(e => e.type === 'InventoryUpdateEvent').length,
+    status: events.filter(e => e.type === 'AssemblyStatusEvent').length,
+  };
+
   return (
     <div className="eve-card" style={{ 
-      padding: '1.5rem',
-      gridColumn: 'span 2',
-      marginTop: '1rem'
+      padding: '20px',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      boxSizing: 'border-box'
     }}>
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '1rem'
+        marginBottom: '15px',
+        flexWrap: 'wrap',
+        gap: '10px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <h3 style={{ 
             margin: 0, 
             color: 'var(--text-primary)',
             fontFamily: 'Orbitron, sans-serif',
-            fontSize: '1rem'
+            fontSize: 'clamp(0.9rem, 1.8vw, 1.1rem)'
           }}>
             EVENT LOG
           </h3>
@@ -42,14 +71,44 @@ export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
             <span style={{
               backgroundColor: 'var(--accent-primary)',
               color: 'white',
-              padding: '0.2rem 0.5rem',
-              borderRadius: '4px',
+              padding: '2px 8px',
               fontSize: '0.8rem'
             }}>
               {events.length}
             </span>
           )}
         </div>
+
+        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+          <FilterButton 
+            active={filter === 'all'} 
+            onClick={() => setFilter('all')}
+          >
+            All ({counts.all})
+          </FilterButton>
+          <FilterButton 
+            active={filter === 'jump'} 
+            onClick={() => setFilter('jump')} 
+            color="#00b8ff"
+          >
+            🚪 ({counts.jump})
+          </FilterButton>
+          <FilterButton 
+            active={filter === 'inventory'} 
+            onClick={() => setFilter('inventory')} 
+            color="#ffaa00"
+          >
+            📦 ({counts.inventory})
+          </FilterButton>
+          <FilterButton 
+            active={filter === 'status'} 
+            onClick={() => setFilter('status')} 
+            color="#00ff95"
+          >
+            ⚡ ({counts.status})
+          </FilterButton>
+        </div>
+
         {onClear && events.length > 0 && (
           <button
             onClick={onClear}
@@ -57,8 +116,7 @@ export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
               backgroundColor: 'transparent',
               border: '1px solid var(--border-color)',
               color: 'var(--text-secondary)',
-              padding: '0.3rem 0.8rem',
-              borderRadius: '4px',
+              padding: '5px 12px',
               fontSize: '0.8rem',
               cursor: 'pointer'
             }}
@@ -71,26 +129,27 @@ export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
       <div
         ref={logRef}
         style={{
-          maxHeight: '200px',
+          flex: 1,
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.5rem',
-          padding: '0.5rem',
+          gap: '6px',
+          padding: '8px',
           backgroundColor: 'var(--bg-secondary)',
-          borderRadius: '4px'
+          minHeight: 0
         }}
       >
-        {events.length === 0 ? (
+        {filteredEvents.length === 0 ? (
           <div style={{ 
             textAlign: 'center', 
             color: 'var(--text-muted)',
-            padding: '1rem'
+            padding: '20px',
+            fontSize: '0.9rem'
           }}>
-            No events yet. Waiting for blockchain activity...
+            No events yet
           </div>
         ) : (
-          events.map((event, index) => {
+          filteredEvents.map((event, index) => {
             const formatted = formatEvent(event);
             return (
               <div
@@ -98,26 +157,78 @@ export function EventLog({ events, formatEvent, onClear }: EventLogProps) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.5rem',
+                  gap: '8px',
+                  padding: '6px 10px',
                   backgroundColor: 'var(--bg-card)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '4px',
-                  fontSize: '0.9rem'
+                  fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
+                  borderLeft: event.type === 'JumpEvent' ? '4px solid #00b8ff' : 
+                              event.type === 'InventoryUpdateEvent' ? '4px solid #ffaa00' :
+                              event.type === 'AssemblyStatusEvent' ? '4px solid #00ff95' : 
+                              '4px solid var(--border-color)',
+                  minHeight: '32px'
                 }}
               >
-                <span style={{ fontSize: '1.1rem' }}>{formatted.icon}</span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                <span style={{ 
+                  fontSize: '1rem', 
+                  minWidth: '24px',
+                  textAlign: 'center'
+                }}>
+                  {formatted.icon}
+                </span>
+                <span style={{ 
+                  color: 'var(--text-secondary)', 
+                  fontSize: '0.8rem',
+                  minWidth: '65px'
+                }}>
                   {formatted.time}
                 </span>
-                <span style={{ color: formatted.color || 'var(--text-primary)' }}>
+                <span style={{ 
+                  color: formatted.color || 'var(--text-primary)',
+                  flex: 1,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
                   {formatted.text}
                 </span>
+                {event.type === 'JumpEvent' && (
+                  <span style={{
+                    fontSize: '0.7rem',
+                    backgroundColor: '#00b8ff20',
+                    padding: '2px 6px',
+                    color: '#00b8ff',
+                    minWidth: '40px',
+                    textAlign: 'center'
+                  }}>
+                    JUMP
+                  </span>
+                )}
               </div>
             );
           })
         )}
       </div>
     </div>
+  );
+}
+
+function FilterButton({ active, onClick, children, color }: any) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '5px 12px',
+        backgroundColor: active ? (color || 'var(--accent-primary)') : 'transparent',
+        border: '1px solid var(--border-color)',
+        color: active ? (color ? (color === '#00ff95' ? 'black' : 'white') : 'white') : 'var(--text-secondary)',
+        cursor: 'pointer',
+        fontSize: '0.8rem',
+        whiteSpace: 'nowrap',
+        transition: 'all 0.2s ease'
+      }}
+    >
+      {children}
+    </button>
   );
 }

@@ -23,33 +23,37 @@ export function WalletButton({
 }: WalletButtonProps) {
   if (isConnected) {
     return (
-      <div style={{
+      <div className="wallet-info" style={{
         display: 'flex',
         alignItems: 'center',
         gap: '1rem',
-        padding: '0.5rem 1rem',
+        padding: '0.75rem 1.5rem',  // Увеличил паддинги
         backgroundColor: 'var(--bg-secondary)',
         border: '1px solid var(--border-color)',
-        borderRadius: '4px',
+        minHeight: '60px',  // Увеличил высоту
+        boxSizing: 'border-box'
       }}>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
             {formatAddress(address)}
           </div>
-          <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+          <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
             {formatBalance(balance)} SUI
           </div>
         </div>
         <button
           onClick={onDisconnect}
+          className="eve-button-secondary"
           style={{
             backgroundColor: 'transparent',
             border: '1px solid var(--status-danger)',
             color: 'var(--status-danger)',
-            padding: '0.25rem 0.75rem',
-            borderRadius: '4px',
+            padding: '0.5rem 1rem',
             cursor: 'pointer',
-            fontSize: '0.9rem',
+            fontSize: '1rem',
+            minHeight: '40px',
+            display: 'flex',
+            alignItems: 'center'
           }}
         >
           Disconnect
@@ -66,6 +70,11 @@ export function WalletButton({
       style={{
         opacity: isConnecting ? 0.7 : 1,
         cursor: isConnecting ? 'not-allowed' : 'pointer',
+        minHeight: '60px',  // Та же высота
+        padding: '0 2rem',
+        display: 'flex',
+        alignItems: 'center',
+        fontSize: '1rem'
       }}
     >
       {isConnecting ? 'Connecting...' : 'Connect Wallet'}
