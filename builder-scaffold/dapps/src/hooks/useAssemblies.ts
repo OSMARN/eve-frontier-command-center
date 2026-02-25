@@ -1,74 +1,63 @@
-import { useState, useEffect } from 'react';
-import { getOwnedObjects, getObject } from '../services/rpcClient';
-import { Assembly, AssemblyType, MOCK_ASSEMBLIES } from '../types/assembly';
+import { useState, useEffect, useCallback } from 'react';
+import { MOCK_ASSEMBLIES, Assembly } from '../types/assembly';
 
 export function useAssemblies(address: string | null) {
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Load mock assemblies
+  const loadAssemblies = useCallback(async () => {
     if (!address) {
       setAssemblies([]);
       return;
     }
 
-    const loadAssemblies = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Try to get real data from blockchain
-        const objects = await getOwnedObjects(address);
-        
-        if (objects?.data?.length > 0) {
-          // Parse real objects
-          const parsed = objects.data
-            .map((item: any) => parseAssembly(item))
-            .filter((a: Assembly | null) => a !== null);
-          setAssemblies(parsed);
-        } else {
-          // Use mock data for development
-          console.log('No objects found, using mock data');
-          setAssemblies(MOCK_ASSEMBLIES);
-        }
-      } catch (err) {
-        console.error('Failed to load assemblies:', err);
-        setError('Failed to load assemblies');
-        setAssemblies(MOCK_ASSEMBLIES); // Fallback to mock
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadAssemblies();
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Always use mock data for testing
+      setAssemblies(MOCK_ASSEMBLIES);
+    } catch (err) {
+      console.error('Failed to load assemblies:', err);
+      setError('Failed to load assemblies');
+    } finally {
+      setLoading(false);
+    }
   }, [address]);
 
-  // Parse blockchain object into Assembly type
-  const parseAssembly = (obj: any): Assembly | null => {
-    try {
-      const content = obj?.data?.content;
-      if (!content) return null;
+  useEffect(() => {
+    loadAssemblies();
+  }, [address, loadAssemblies]);
 
-      // Determine type based on content
-      let type: AssemblyType = 'unknown';
-      if (content.type?.includes('gate')) type = 'gate';
-      else if (content.type?.includes('storage')) type = 'storage';
-      else if (content.type?.includes('turret')) type = 'turret';
+  // Toggle assembly status
+  const toggleAssemblyStatus = useCallback((assemblyId: string) => {
+    setAssemblies(prev => 
+      prev.map(a => 
+        a.id === assemblyId 
+          ? { ...a, isOnline: !a.isOnline }
+          : a
+      )
+    );
+  }, []);
 
-      return {
-        id: obj.data.objectId || obj.data.objectId,
-        type,
-        name: `Assembly ${obj.data.objectId?.slice(0, 8)}`,
-        isOnline: content.fields?.is_online || false,
-        fuelAmount: content.fields?.fuel_amount,
-        maxFuel: content.fields?.max_fuel,
-      };
-    } catch (e) {
-      console.error('Parse error:', e);
-      return null;
-    }
-  };
+  // Set gate toll
+  const setGateToll = useCallback((gateId: string, toll: number) => {
+    setAssemblies(prev => 
+      prev.map(a => 
+        a.id === gateId && a.type === 'gate'
+          ? { ...a, toll }
+          : a
+      )
+    );
+  }, []);
+
+  // Set gate access
+  const setGateAccess = useCallback((gateId: string, isPublic: boolean) => {
+    console.log(`Gate ${gateId} access set to: ${isPublic ? 'public' : 'restricted'}`);
+    // In a real app, this would update the blockchain
+  }, []);
 
   // Calculate clan stats
   const stats = {
@@ -76,6 +65,7 @@ export function useAssemblies(address: string | null) {
     online: assemblies.filter(a => a.isOnline).length,
     gates: assemblies.filter(a => a.type === 'gate').length,
     storages: assemblies.filter(a => a.type === 'storage').length,
+    turrets: assemblies.filter(a => a.type === 'turret').length,
     totalFuel: assemblies.reduce((sum, a) => sum + (a.fuelAmount || 0), 0),
     totalValue: assemblies.reduce((sum, a) => sum + (a.value || 0), 0),
   };
@@ -85,5 +75,8 @@ export function useAssemblies(address: string | null) {
     loading,
     error,
     stats,
+    toggleAssemblyStatus,
+    setGateToll,
+    setGateAccess,
   };
 }

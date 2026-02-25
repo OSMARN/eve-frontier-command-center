@@ -2,15 +2,18 @@ import React from 'react';
 import { useWallet } from './hooks/useWallet';
 import { useAssemblies } from './hooks/useAssemblies';
 import { useWebSocket } from './hooks/useWebSocket';
+import { useTransactions } from './hooks/useTransactions';
 import { WalletButton } from './components/ui/WalletButton';
 import { AssemblyList } from './components/dashboard/AssemblyList';
 import { EventLog } from './components/dashboard/EventLog';
+import { TransactionToast } from './components/ui/TransactionToast';
 import './styles/eve-theme.css';
 
 function App() {
   const wallet = useWallet();
-  const { assemblies, loading, stats } = useAssemblies(wallet.address);
+  const { assemblies, loading, stats, refreshAssemblies } = useAssemblies(wallet.address);
   const { events, clearEvents, formatEvent, isConnected } = useWebSocket();
+  const { pendingTransactions, clearOldTransactions } = useTransactions(wallet.address);
 
   return (
     <div style={{ 
@@ -65,8 +68,13 @@ function App() {
             gridTemplateColumns: '2fr 1fr',
             gap: '1.5rem',
           }}>
-            {/* Left column - Assembly List */}
-            <AssemblyList assemblies={assemblies} loading={loading} />
+            {/* Left column - Assembly List with controls */}
+            <AssemblyList 
+              assemblies={assemblies} 
+              loading={loading} 
+              ownerAddress={wallet.address}
+              onStatusChange={refreshAssemblies}
+            />
 
             {/* Right column - Clan Stats */}
             <div className="eve-card" style={{ padding: '1.5rem' }}>
@@ -178,6 +186,12 @@ function App() {
             events={events} 
             formatEvent={formatEvent}
             onClear={clearEvents}
+          />
+
+          {/* Transaction Toasts */}
+          <TransactionToast 
+            transactions={pendingTransactions}
+            onClose={clearOldTransactions}
           />
         </>
       ) : (
